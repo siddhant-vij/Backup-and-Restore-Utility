@@ -1,0 +1,5 @@
+{
+  "defaultRestoreDir":"path/to/restore/dir",
+  "defaultBackupDir":"path/to/backup/dir",
+  "defaultSourceDir":"path/to/source/dir"
+}
