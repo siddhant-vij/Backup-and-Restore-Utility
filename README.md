@@ -14,6 +14,7 @@ A simple terminal-based Backup & Restore Utility in Java. This tool allows the u
 - **Basic File Backup**: Ability to backup specified files and directories.
 - **Basic File Restore**: Ability to restore from a backup.
 - **Basic Test Suite**: Test suite for basic functionality.
+- **Multi-threading**: Utilize multiple threads for faster backup and restore operations.
 
 ## Contributing
 
@@ -36,8 +37,7 @@ Contributions are what make the open-source community such an amazing place to l
 
 ## Future Improvements
 
-- **Multi-threading**: Utilize multiple threads for faster backup and restore operations.
-- **Compression**: Compress the backup files to save space.
+- **Backup Compression**: Compress the backup files to save space.
 - **Backup Encryption**: Encrypt backup files for added security.
 - **Scheduled Backups**: Ability to schedule backups at recurring intervals.
 - **Selective Patterns**: Backup/Restore only specific files or directories.

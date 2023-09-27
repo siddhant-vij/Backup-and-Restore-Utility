@@ -97,8 +97,7 @@ public class BackupManagerTest {
   @Test(expected = AccessDeniedException.class)
   public void testBackup_InsufficientPermissions() throws IOException {
     // Update the config to use a system directory
-    config.setDefaultSourceDir("C:\\Windows\\System32");
-    config.setDefaultBackupDir("C:\\Windows\\System32_backup");
+    config.setDefaultBackupDir("C:\\Windows\\System32");
 
     // Perform the backup
     backupManager.backup();

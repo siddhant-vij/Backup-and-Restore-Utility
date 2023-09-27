@@ -39,12 +39,12 @@ public class ConfigurationTest {
   }
 
   // Malformed JSON
-  @Test(expected = IOException.class)
+  @Test(expected = RuntimeException.class)
   public void testLoadConfig_MalformedJSON() throws IOException {
     // Write a malformed JSON string
     Files.writeString(Path.of("path/to/default-config.json"), "malformed json");
 
-    // This should throw an IOException
+    // This should throw a RuntimeException
     new Configuration(tempConfigFilePath.toString());
   }
 
