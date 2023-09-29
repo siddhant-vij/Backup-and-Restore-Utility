@@ -15,41 +15,47 @@ public class Configuration {
   private String defaultSourceDir;
   private String defaultBackupDir;
   private String defaultRestoreDir;
+  private boolean enableCompression;
 
-  public Configuration() {
+  private void readJsonConfig(String configFilePath) {
+    JSONParser parser = new JSONParser();
+    JSONObject configJson = null;
     try {
-      // Read the default-config.json
-      Path configClassPath = Path.of(Configuration.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-      Path configFilePath = Path.of(configClassPath.getParent().toString(), "config", "default-config.json");
-      JSONParser parser = new JSONParser();
-      JSONObject configJson = (JSONObject) parser.parse(new FileReader(configFilePath.toString()));
+      if (configFilePath != null) {
+        // Read the String input config.json
+        configJson = (JSONObject) parser.parse(new FileReader(configFilePath.toString()));
+      } else {
+        // Read the default-config.json
+        Path configClassPath = Path.of(Configuration.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+        Path configFile = Path.of(configClassPath.getParent().toString(), "config", "default-config.json");
+        configJson = (JSONObject) parser.parse(new FileReader(configFile.toString()));
+      }
 
-      // Initialize fields
-      defaultSourceDir = (String) configJson.get("defaultSourceDir");
-      defaultBackupDir = (String) configJson.get("defaultBackupDir");
-      defaultRestoreDir = (String) configJson.get("defaultRestoreDir");
-
+      // Initialize fields with null checks
+      if (configJson.get("defaultSourceDir") != null) {
+        defaultSourceDir = (String) configJson.get("defaultSourceDir");
+      }
+      if (configJson.get("defaultBackupDir") != null) {
+        defaultBackupDir = (String) configJson.get("defaultBackupDir");
+      }
+      if (configJson.get("defaultRestoreDir") != null) {
+        defaultRestoreDir = (String) configJson.get("defaultRestoreDir");
+      }
+      if (configJson.get("enableCompression") != null) {
+        enableCompression = (Boolean) configJson.get("enableCompression");
+      }
     } catch (IOException | ParseException | URISyntaxException e) {
       System.out.println("Error reading configuration: " + e.getMessage());
       throw new RuntimeException(e);
     }
   }
 
+  public Configuration() {
+    readJsonConfig(null);
+  }
+
   public Configuration(String configFilePath) {
-    try {
-      // Read the String input config.json
-      JSONParser parser = new JSONParser();
-      JSONObject configJson = (JSONObject) parser.parse(new FileReader(configFilePath.toString()));
-
-      // Initialize fields
-      defaultSourceDir = (String) configJson.get("defaultSourceDir");
-      defaultBackupDir = (String) configJson.get("defaultBackupDir");
-      defaultRestoreDir = (String) configJson.get("defaultRestoreDir");
-
-    } catch (IOException | ParseException e) {
-      System.out.println("Error reading configuration: " + e.getMessage());
-      throw new RuntimeException(e);
-    }
+    readJsonConfig(configFilePath);
   }
 
   public String getDefaultSourceDir() {
@@ -74,6 +80,14 @@ public class Configuration {
 
   public void setDefaultRestoreDir(String defaultRestoreDir) {
     this.defaultRestoreDir = defaultRestoreDir;
+  }
+
+  public boolean isEnableCompression() {
+    return enableCompression;
+  }
+
+  public void setEnableCompression(boolean enableCompression) {
+    this.enableCompression = enableCompression;
   }
 
   public void print() {

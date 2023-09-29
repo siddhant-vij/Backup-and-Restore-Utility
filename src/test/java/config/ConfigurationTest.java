@@ -1,3 +1,8 @@
+// Test cases only applicable for Basic Functionality of Backup & Restore
+// With every new feature added, instead of adding test cases for every feature,
+// I've modified the basic test cases to adapt to the new feature.
+// Not to be followed for real practical project - develop new test cases for new features
+
 package test.java.config;
 
 import main.java.config.Configuration;
@@ -39,12 +44,12 @@ public class ConfigurationTest {
   }
 
   // Malformed JSON
-  @Test(expected = IOException.class)
+  @Test(expected = RuntimeException.class)
   public void testLoadConfig_MalformedJSON() throws IOException {
     // Write a malformed JSON string
     Files.writeString(Path.of("path/to/default-config.json"), "malformed json");
 
-    // This should throw an IOException
+    // This should throw a RuntimeException
     new Configuration(tempConfigFilePath.toString());
   }
 
@@ -64,6 +69,7 @@ public class ConfigurationTest {
     assertNotNull(config.getDefaultSourceDir());
     assertNull(config.getDefaultBackupDir());
     assertNull(config.getDefaultRestoreDir());
+    assertFalse(config.isEnableCompression());
   }
 
   // Utility method to write JSON to the default-config.json

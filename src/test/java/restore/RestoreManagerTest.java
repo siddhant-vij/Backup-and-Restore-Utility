@@ -1,39 +1,49 @@
+// Test cases only applicable for Basic Functionality of Backup & Restore
+// With every new feature added, instead of adding test cases for every feature,
+// I've modified the basic test cases to adapt to the new feature.
+// Not to be followed for real practical project - develop new test cases for new features
+
 package test.java.restore;
 
 import main.java.restore.RestoreManager;
 import main.java.config.Configuration;
 import org.junit.*;
+import org.junit.rules.TemporaryFolder;
+
 import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.Comparator;
 
 public class RestoreManagerTest {
   private final Configuration config = new Configuration();
   private final RestoreManager restoreManager = new RestoreManager(config);
 
+  @Rule
+  public TemporaryFolder tempFolder = new TemporaryFolder();
+
   // Happy path
   @Test
   public void testRestore_HappyPath() {
-    Path backupDir = Paths.get("backup_test");
-    Path restoreDir = Paths.get("restore_test");
-
     try {
-      // Setup known backup directory structure
+      File backupDirFile = tempFolder.newFolder("backup_test");
+      File restoreDirFile = tempFolder.newFolder("restore_test");
+      Path backupDir = backupDirFile.toPath();
+      Path restoreDir = restoreDirFile.toPath();
+
       Files.createDirectories(backupDir.resolve("subdir"));
       Files.writeString(backupDir.resolve("file1.txt"), "file1");
       Files.writeString(backupDir.resolve("subdir/file2.txt"), "file2");
 
-      // Update the config to use the test directories
       config.setDefaultBackupDir(backupDir.toString());
       config.setDefaultRestoreDir(restoreDir.toString());
 
-      // Perform the restore
+      // Disable compression for this test
+      config.setEnableCompression(false);
+
       restoreManager.restore();
 
-      // Validate restore
       assertTrue(Files.exists(restoreDir));
       assertTrue(Files.exists(restoreDir.resolve("file1.txt")));
       assertTrue(Files.exists(restoreDir.resolve("subdir/file2.txt")));
@@ -46,40 +56,30 @@ public class RestoreManagerTest {
 
     } catch (IOException e) {
       fail("IOException was thrown: " + e.getMessage());
-    } finally {
-      // Cleanup
-      deleteDirectory(backupDir);
-      deleteDirectory(restoreDir);
     }
   }
 
   // Restore an empty directory
   @Test
   public void testRestore_EmptyDirectory() {
-    Path backupDir = Paths.get("backup_empty_test");
-    Path restoreDir = Paths.get("restore_empty_test");
-
     try {
-      // Setup empty backup directory
-      Files.createDirectories(backupDir);
+      // Create backup and restore directories
+      File backupDir = tempFolder.newFolder("backup_empty_test");
+      File restoreDir = tempFolder.newFolder("restore_empty_test");
 
       // Update the config
-      config.setDefaultBackupDir(backupDir.toString());
-      config.setDefaultRestoreDir(restoreDir.toString());
+      config.setDefaultBackupDir(backupDir.getAbsolutePath());
+      config.setDefaultRestoreDir(restoreDir.getAbsolutePath());
 
       // Perform the restore
       restoreManager.restore();
 
       // Validate restore - should also be empty
-      assertTrue(Files.exists(restoreDir));
-      assertTrue(Files.isDirectory(restoreDir));
+      assertTrue("Restore directory should exist", Files.exists(restoreDir.toPath()));
+      assertTrue("Restore directory should be a directory", Files.isDirectory(restoreDir.toPath()));
 
     } catch (IOException e) {
       fail("IOException was thrown: " + e.getMessage());
-    } finally {
-      // Cleanup
-      deleteDirectory(backupDir);
-      deleteDirectory(restoreDir);
     }
   }
 
@@ -101,17 +101,5 @@ public class RestoreManagerTest {
 
     // Perform the restore
     restoreManager.restore();
-  }
-
-  // Helper method to recursively delete a directory
-  private static void deleteDirectory(Path path) {
-    try {
-      Files.walk(path)
-          .sorted(Comparator.reverseOrder())
-          .map(Path::toFile)
-          .forEach(File::delete);
-    } catch (IOException e) {
-      // Ignore
-    }
   }
 }

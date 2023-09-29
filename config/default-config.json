@@ -1,5 +1,6 @@
 {
-  "defaultRestoreDir":"path/to/restore/dir",
+  "defaultSourceDir":"path/to/source/dir",
   "defaultBackupDir":"path/to/backup/dir",
-  "defaultSourceDir":"path/to/source/dir"
+  "defaultRestoreDir":"path/to/restore/dir",
+  "enableCompression":true
 }

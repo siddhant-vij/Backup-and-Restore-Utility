@@ -1,3 +1,8 @@
+// Test cases only applicable for Basic Functionality of Backup & Restore
+// With every new feature added, instead of adding test cases for every feature,
+// I've modified the basic test cases to adapt to the new feature.
+// Not to be followed for real practical project - develop new test cases for new features
+
 package test.java.util;
 
 import org.junit.*;
@@ -8,10 +13,10 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
-import main.java.util.Utils;
+import main.java.util.FileOperationsUtil;
 import main.java.config.Configuration;
 
-public class UtilsTest {
+public class FileOperationsUtilTest {
   private final Configuration config = new Configuration();
 
   // Happy path Test
@@ -31,7 +36,7 @@ public class UtilsTest {
       Files.writeString(src, "Hello, world!");
 
       // Copy the file
-      Utils.copyFile(src, dest);
+      FileOperationsUtil.copyFile(src, dest);
 
       // Validate that the file was copied correctly
       String copiedContent = Files.readString(dest);
@@ -50,7 +55,7 @@ public class UtilsTest {
   public void testCopyFile_SourceNotExist() throws IOException {
     Path src = Path.of("nonexistentfile.txt");
     Path dest = Path.of("someParentDir", "destfile.txt");
-    Utils.copyFile(src, dest);
+    FileOperationsUtil.copyFile(src, dest);
   }
 
   // Destination directory does not exist, but should be created by Utils.copyFile
@@ -60,7 +65,7 @@ public class UtilsTest {
     Path dest = Path.of("nonexistentdir", "destfile.txt");
     Files.writeString(src, "test");
 
-    Utils.copyFile(src, dest);
+    FileOperationsUtil.copyFile(src, dest);
 
     // Verify that the destination file exists and has the correct content
     assertTrue("Destination file should exist", Files.exists(dest));
@@ -79,6 +84,6 @@ public class UtilsTest {
     Path dest = Path.of("C:\\\\Windows\\\\System32\\\\destfile.txt");
     // trying to write to System32 should fail for a regular user
     Files.writeString(src, "test");
-    Utils.copyFile(src, dest);
+    FileOperationsUtil.copyFile(src, dest);
   }
 }
