@@ -24,11 +24,22 @@ public class FileOperationsUtil {
   public static void displayProgress(AtomicInteger counter, long total) {
     // Progress display logic
     new Thread(() -> {
+      long timeCounter = 0L;
+      System.out.println();
       while (counter.get() < total) {
         double percentage = ((double) counter.get() / total) * 100;
-        System.out.println("Progress: " + String.format("%.2f", percentage) + "%");
+        if (timeCounter == 0) {
+          System.out.println("Time t = When the program starts");
+          System.out.println(
+              "Progress at time (t)s: " + String.format("%.2f", percentage) + "%");
+        } else {
+          System.out.println(
+              "Progress at time (t + " + timeCounter / 1000 + ")s: " + String.format("%.2f", percentage) + "%");
+        }
+
         try {
           Thread.sleep(5000);
+          timeCounter += 5000;
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }

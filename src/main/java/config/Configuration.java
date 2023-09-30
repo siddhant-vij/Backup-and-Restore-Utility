@@ -92,15 +92,17 @@ public class Configuration {
 
   public void print() {
     Field[] fields = this.getClass().getDeclaredFields();
-    System.out.println("Current Configuration:");
+    System.out.println("\nCurrent Configuration:");
 
+    int count = 0;
     for (Field field : fields) {
       field.setAccessible(true);
       try {
-        System.out.println(field.getName() + ": " + field.get(this));
+        System.out.println(++count + ". " + field.getName() + ": " + field.get(this));
       } catch (IllegalAccessException e) {
         System.out.println("Error reading field " + field.getName() + ": " + e.getMessage());
       }
     }
+    System.out.println();
   }
 }

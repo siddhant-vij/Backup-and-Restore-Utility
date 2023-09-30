@@ -33,7 +33,7 @@ public class RestoreManager {
 
     long totalFiles = Files.walk(backupPath).filter(Files::isRegularFile).count();
     FileOperationsUtil.checkAndCreateDir(restorePath);
-
+    FileOperationsUtil.displayProgress(filesRestored, totalFiles);
     try {
       Files.walkFileTree(backupPath, EnumSet.noneOf(FileVisitOption.class), Integer.MAX_VALUE,
           new SimpleFileVisitor<Path>() {
@@ -65,12 +65,9 @@ public class RestoreManager {
               return FileVisitResult.CONTINUE;
             }
           });
-
-      FileOperationsUtil.displayProgress(filesRestored, totalFiles);
-
       executorService.shutdown();
       executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-      System.out.println("Restore complete!");
+      System.out.println("\nRestore complete!");
     } catch (IOException e) {
       System.out.println("Restore failed: " + e.getMessage());
       throw e;

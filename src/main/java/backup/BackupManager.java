@@ -34,7 +34,7 @@ public class BackupManager {
 
     long totalFiles = Files.walk(sourcePath).filter(Files::isRegularFile).count();
     FileOperationsUtil.checkAndCreateDir(backupDir);
-
+    FileOperationsUtil.displayProgress(filesBackedUp, totalFiles);
     try {
       Files.walkFileTree(sourcePath, EnumSet.noneOf(FileVisitOption.class), Integer.MAX_VALUE,
           new SimpleFileVisitor<Path>() {
@@ -64,12 +64,9 @@ public class BackupManager {
               return FileVisitResult.CONTINUE;
             }
           });
-
-      FileOperationsUtil.displayProgress(filesBackedUp, totalFiles);
-
       executorService.shutdown();
       executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-      System.out.println("Backup complete!");
+      System.out.println("\nBackup complete!");
     } catch (IOException e) {
       System.out.println("Backup failed: " + e.getMessage());
       throw e;

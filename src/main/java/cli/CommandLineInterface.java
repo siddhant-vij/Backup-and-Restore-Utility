@@ -18,6 +18,7 @@ public class CommandLineInterface {
 
     do {
       // Display menu
+      System.out.println("\nBackup and Restore Utility\n");
       System.out.println("1: Backup files");
       System.out.println("2: Restore files");
       System.out.println("3: Show configuration");
@@ -29,14 +30,20 @@ public class CommandLineInterface {
       switch (choice) {
         case 1:
           try {
+            final long startTime = System.currentTimeMillis();
             backupManager.backup();
+            final long endTime = System.currentTimeMillis();
+            System.out.println("It took " + (endTime - startTime) / 1000 + "s to finish backing up the files.\n");
           } catch (IOException e) {
             e.printStackTrace();
           }
           break;
         case 2:
           try {
+            final long startTime = System.currentTimeMillis();
             restoreManager.restore();
+            final long endTime = System.currentTimeMillis();
+            System.out.println("It took " + (endTime - startTime) / 1000 + "s to finish restoring the files.\n");
           } catch (IOException e) {
             e.printStackTrace();
           }
@@ -45,7 +52,7 @@ public class CommandLineInterface {
           config.print();
           break;
         case 0:
-          System.out.println("Exiting...");
+          System.out.println("\nExiting...");
           break;
         default:
           System.out.println("Invalid choice. Please try again.");
