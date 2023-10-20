@@ -7,7 +7,7 @@ import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -21,21 +21,16 @@ public class FileOperationsUtil {
     Files.createDirectories(dir);
   }
 
-  public static void displayProgress(AtomicInteger counter, long total) {
+  public static void displayProgress(AtomicLong bytesBackedUp, long totalBytes) {
     // Progress display logic
     new Thread(() -> {
       long timeCounter = 0L;
       System.out.println();
-      while (counter.get() < total) {
-        double percentage = ((double) counter.get() / total) * 100;
-        if (timeCounter == 0) {
-          System.out.println("Time t = When the program starts");
-          System.out.println(
-              "Progress at time (t)s: " + String.format("%.2f", percentage) + "%");
-        } else {
-          System.out.println(
-              "Progress at time (t + " + timeCounter / 1000 + ")s: " + String.format("%.2f", percentage) + "%");
-        }
+      while (bytesBackedUp.get() < totalBytes) {
+        double percentage = ((double) bytesBackedUp.get() / totalBytes) * 100;
+        System.out.println(
+            "Progress at time t + " + timeCounter / 1000 + " s: " + String.format("%.2f", percentage) + "% (" +
+                bytesBackedUp.get() / (1024 * 1024) + " MB / " + totalBytes / (1024 * 1024) + " MB)");
 
         try {
           Thread.sleep(5000);
@@ -52,7 +47,6 @@ public class FileOperationsUtil {
     if (dest.getParent() != null) {
       Files.createDirectories(dest.getParent());
     }
-    // Copy file
     Files.copy(src, dest, StandardCopyOption.REPLACE_EXISTING);
   }
 
