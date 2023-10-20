@@ -1,8 +1,3 @@
-// Test cases only applicable for Basic Functionality of Backup & Restore
-// With every new feature added, instead of adding test cases for every feature,
-// I've modified the basic test cases to adapt to the new feature.
-// Not to be followed for real practical project - develop new test cases for new features
-
 package test.java.backup;
 
 import main.java.backup.BackupManager;

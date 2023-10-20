@@ -1,0 +1,6 @@
+- Tests work till commit [#5](https://github.com/siddhant-vij/Backup-and-Restore-Utility/tree/ba4a277050a5281b594ef6855cfb8826e01b452a).
+- Test cases only applicable for Basic Functionality of Backup & Restore.
+- With every new feature added (till commit [#5](https://github.com/siddhant-vij/Backup-and-Restore-Utility/tree/ba4a277050a5281b594ef6855cfb8826e01b452a)), instead of adding test cases for every feature.
+- I've modified the basic test cases to adapt to each new feature.
+- These tests may fail after commit [#5](https://github.com/siddhant-vij/Backup-and-Restore-Utility/tree/ba4a277050a5281b594ef6855cfb8826e01b452a) - not checked post that.
+- This practice is not to be followed for real-world practical project - develop new test cases for new features (TDD).
