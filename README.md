@@ -16,6 +16,8 @@ A simple terminal-based Backup & Restore Utility in Java. This tool allows the u
 - **Basic Test Suite**: Test suite for basic functionality.
 - **Multi-threading**: Utilize multiple threads for faster backup and restore operations.
 - **Backup Compression**: Compress the backup files to save space.
+- **Backup & File Size**: Provide backup size & file count before proceeding.
+- **Single Backup File**: Create a single backup file (maintaining folder structure).
 
 ## Contributing
 
@@ -47,7 +49,7 @@ Contributions are what make the open-source community such an amazing place to l
 - **Backup Versioning**: Save multiple versions of backup files.
 - **Configuration Files**: Use configuration files to pre-set backup and restore settings.
 - **Log Generation**: Generate logs detailing the backup and restore operations.
-- **Backup Size Estimation**: Provide an estimate of the backup size before proceeding.
+- **API Integration**: Allow integration with other systems - used as a service by other apps.
 - **Backup to Remote Server**: Ability to backup to a remote server via FTP or SSH.
 - **Scheduled Backups**: Ability to schedule backups at recurring intervals.
 - **Bandwidth Throttling**: Limit the amount of network bandwidth used during backup to a remote server.
