@@ -18,6 +18,7 @@ A simple terminal-based Backup & Restore Utility in Java. This tool allows the u
 - **Backup Compression**: Compress the backup files to save space.
 - **Backup & File Size**: Provide backup size & file count before proceeding.
 - **Single Backup File**: Create a single backup file (maintaining folder structure).
+- **Encryption Decryption**: Encrypt & decrypt backup files for added security.
 
 ## Contributing
 
@@ -40,7 +41,6 @@ Contributions are what make the open-source community such an amazing place to l
 
 ## Future Improvements
 
-- **Backup Encryption**: Encrypt backup files for added security.
 - **Selective Patterns**: Backup/Restore only specific files or directories.
 - **Exclude Patterns**: Specify file or directory patterns to exclude from backup/restore.
 - **Backup Integrity Checks**: Verify the integrity of backup files.

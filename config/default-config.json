@@ -2,5 +2,7 @@
   "defaultSourceDir":"path/to/source/dir",
   "defaultBackupDir":"path/to/backup/dir",
   "defaultRestoreDir":"path/to/restore/dir",
-  "enableCompression":true
+  "enableCompression":true,
+  "enableEncryption":true,
+  "aesFileKeyDir":"./keys"
 }

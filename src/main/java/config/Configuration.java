@@ -16,6 +16,8 @@ public class Configuration {
   private String defaultBackupDir;
   private String defaultRestoreDir;
   private boolean enableCompression;
+  private boolean enableEncryption;
+  private String aesFileKeyDir;
 
   private void readJsonConfig(String configFilePath) {
     JSONParser parser = new JSONParser();
@@ -43,6 +45,12 @@ public class Configuration {
       }
       if (configJson.get("enableCompression") != null) {
         enableCompression = (Boolean) configJson.get("enableCompression");
+      }
+      if (configJson.get("enableEncryption") != null) {
+        enableEncryption = (Boolean) configJson.get("enableEncryption");
+      }
+      if (configJson.get("aesFileKeyDir") != null) {
+        aesFileKeyDir = (String) configJson.get("aesFileKeyDir");
       }
     } catch (IOException | ParseException | URISyntaxException e) {
       System.out.println("Error reading configuration: " + e.getMessage());
@@ -88,6 +96,22 @@ public class Configuration {
 
   public void setEnableCompression(boolean enableCompression) {
     this.enableCompression = enableCompression;
+  }
+
+  public boolean isEnableEncryption() {
+    return enableEncryption;
+  }
+
+  public void setEnableEncryption(boolean enableEncryption) {
+    this.enableEncryption = enableEncryption;
+  }
+
+  public String getAesFileKeyDir() {
+    return aesFileKeyDir;
+  }
+
+  public void setAesFileKeyDir(String aesFileKeyDir) {
+    this.aesFileKeyDir = aesFileKeyDir;
   }
 
   public void print() {
