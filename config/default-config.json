@@ -1,8 +1,12 @@
 {
-  "defaultSourceDir":"path/to/source/dir",
-  "defaultBackupDir":"path/to/backup/dir",
-  "defaultRestoreDir":"path/to/restore/dir",
+  "defaultSourceDir":"path//to//Source",
+  "defaultBackupDir":"path//to//Backup",
+  "defaultRestoreDir":"path//to//Restore",
   "enableCompression":true,
   "enableEncryption":true,
-  "aesFileKeyDir":"./keys"
+  "aesFileKeyDir":"./keys",
+  "backupIncludePatterns": ["all"],
+  "backupExcludePatterns": ["none"],
+  "restoreIncludePatterns": ["all"],
+  "restoreExcludePatterns": ["none"]
 }

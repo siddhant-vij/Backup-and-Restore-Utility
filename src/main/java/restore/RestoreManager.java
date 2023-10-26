@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
@@ -28,9 +29,13 @@ public class RestoreManager {
 
   private final Configuration config;
   private String encryptionPassword = null;
+  private List<String> restoreIncludePatterns;
+  private List<String> restoreExcludePatterns;
 
   public RestoreManager(Configuration config) {
     this.config = config;
+    this.restoreIncludePatterns = config.getRestoreIncludePatterns();
+    this.restoreExcludePatterns = config.getRestoreExcludePatterns();
   }
 
   public void restore() throws IOException {
@@ -44,7 +49,8 @@ public class RestoreManager {
     SecretKey aesKeyFile = null;
     if (config.isEnableEncryption()) {
       try {
-        aesKeyFile = (SecretKey) KeyManagementUtil.readKeyFromFile(config.getAesFileKeyDir() + "/aes.key", "AES", encryptionPassword);
+        aesKeyFile = (SecretKey) KeyManagementUtil.readKeyFromFile(config.getAesFileKeyDir() + "/aes.key", "AES",
+            encryptionPassword);
       } catch (Exception e) {
         System.out.println("\nFailed to read AES key: " + e.getMessage() + "\n");
         System.exit(1);
@@ -54,13 +60,21 @@ public class RestoreManager {
     ZipFile zipFile = new ZipFile(backupZipPath.toFile());
     ConcurrentLinkedQueue<ZipEntry> allEntries = new ConcurrentLinkedQueue<>();
     ExecutorService readEntriesExecutor = Executors.newVirtualThreadPerTaskExecutor();
+    AtomicLong estimatedTotalBytes = new AtomicLong(0);
 
     zipFile.stream().forEach(entry -> {
       readEntriesExecutor.submit(() -> {
         try (InputStream inputStream = zipFile.getInputStream(entry)) {
+          boolean include = FileOperationsUtil.matchPattern(entry.getName(), restoreIncludePatterns);
+          boolean exclude = FileOperationsUtil.matchPattern(entry.getName(), restoreExcludePatterns);
+          if (!include || exclude) {
+            return;
+          }
+
           byte[] bytes = new byte[inputStream.available()];
           inputStream.read(bytes);
           allEntries.add(entry);
+          estimatedTotalBytes.addAndGet(entry.getSize());
         } catch (IOException e) {
           e.printStackTrace();
         }
@@ -75,16 +89,22 @@ public class RestoreManager {
       Path restorePath = Path.of(config.getDefaultRestoreDir());
 
       long totalFiles = allEntries.size();
-      long estimatedTotalBytes = Files.size(backupZipPath);
+      long totalBytes = estimatedTotalBytes.get();
       AtomicLong bytesRestored = new AtomicLong(0);
       System.out.println(
-          "\nNo.of files to restore: " + totalFiles + " with disk space: " + estimatedTotalBytes / (1024 * 1024)
+          "\nNo. of files to restore: " + totalFiles + " with disk space: " + totalBytes / (1024 * 1024)
               + " MB");
-      Timer timer = FileOperationsUtil.displayProgressRestore(bytesRestored, estimatedTotalBytes);
+      Timer timer = FileOperationsUtil.displayProgressRestore(bytesRestored, totalBytes);
 
       try (ZipInputStream zis = new ZipInputStream(new FileInputStream(backupZipPath.toFile()))) {
         ZipEntry entry;
         while ((entry = zis.getNextEntry()) != null) {
+          boolean include = FileOperationsUtil.matchPattern(entry.getName(), restoreIncludePatterns);
+          boolean exclude = FileOperationsUtil.matchPattern(entry.getName(), restoreExcludePatterns);
+          if (!include || exclude) {
+            continue;
+          }
+
           final ZipEntry finalEntry = entry;
           ByteArrayOutputStream baos = new ByteArrayOutputStream();
           byte[] buffer = new byte[8 * 1024];

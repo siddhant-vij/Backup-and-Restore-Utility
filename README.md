@@ -19,6 +19,7 @@ A simple terminal-based Backup & Restore Utility in Java. This tool allows the u
 - **Backup & File Size**: Provide backup size & file count before proceeding.
 - **Single Backup File**: Create a single backup file (maintaining folder structure).
 - **Encryption Decryption**: Encrypt & decrypt backup files for added security.
+- **Inclusion/Exclusion**: Specify file patterns to include/exclude from backup & restore.
 
 ## Contributing
 
@@ -41,13 +42,10 @@ Contributions are what make the open-source community such an amazing place to l
 
 ## Future Improvements
 
-- **Selective Patterns**: Backup/Restore only specific files or directories.
-- **Exclude Patterns**: Specify file or directory patterns to exclude from backup/restore.
-- **Backup Integrity Checks**: Verify the integrity of backup files.
+- **Backup Integrity Checks**: Verify the integrity of backup & restore files.
 - **Incremental Backups**: Only back up files that have changed since the last (any) backup.
 - **Differential Backups**: Only back up files that have changed since the last (full) backup.
 - **Backup Versioning**: Save multiple versions of backup files.
-- **Configuration Files**: Use configuration files to pre-set backup and restore settings.
 - **Log Generation**: Generate logs detailing the backup and restore operations.
 - **API Integration**: Allow integration with other systems - used as a service by other apps.
 - **Backup to Remote Server**: Ability to backup to a remote server via FTP or SSH.

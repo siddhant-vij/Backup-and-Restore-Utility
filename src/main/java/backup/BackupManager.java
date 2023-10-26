@@ -15,9 +15,11 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Queue;
 import java.util.Timer;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -28,9 +30,13 @@ public class BackupManager {
   private final Configuration config;
   private String encryptionPassword = null;
   private final int chunkSize = 20; // Change this & check performance!
+  List<String> includePatterns;
+  List<String> excludePatterns;
 
   public BackupManager(Configuration config) {
     this.config = config;
+    this.includePatterns = config.getBackupIncludePatterns();
+    this.excludePatterns = config.getBackupExcludePatterns();
   }
 
   public void backup() throws IOException {
@@ -44,22 +50,25 @@ public class BackupManager {
     Path sourcePath = Path.of(config.getDefaultSourceDir());
     Path backupDir = Path.of(config.getDefaultBackupDir());
 
-    List<Path> filesToBackup = new ArrayList<>();
+    Queue<Path> filesToBackup = new ConcurrentLinkedQueue<>();
     AtomicLong totalBytes = new AtomicLong(0);
 
     Files.walkFileTree(sourcePath, EnumSet.noneOf(FileVisitOption.class), Integer.MAX_VALUE,
         new SimpleFileVisitor<Path>() {
           @Override
           public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-            filesToBackup.add(file);
-            totalBytes.addAndGet(attrs.size());
+            if (FileOperationsUtil.matchPattern(file.toString(), includePatterns) &&
+                !FileOperationsUtil.matchPattern(file.toString(), excludePatterns)) {
+              filesToBackup.add(file);
+              totalBytes.addAndGet(attrs.size());
+            }
             return FileVisitResult.CONTINUE;
           }
         });
 
     long totalFiles = filesToBackup.size();
     System.out.println(
-        "\nNo.of files to backup: " + totalFiles + " with disk space: " + totalBytes.get() / (1024 * 1024) + " MB");
+        "\nNo. of files to backup: " + totalFiles + " with disk space: " + totalBytes.get() / (1024 * 1024) + " MB");
     FileOperationsUtil.checkAndCreateDir(backupDir);
     Timer timer = FileOperationsUtil.displayProgressBackup(bytesBackedUp, 2 * totalBytes.get());
     SecretKey aesKey = null;
@@ -72,7 +81,8 @@ public class BackupManager {
     final SecretKey aesKeyFinal = aesKey;
     for (int i = 0; i < filesToBackup.size(); i += chunkSize) {
       int end = Math.min(i + chunkSize, filesToBackup.size());
-      List<Path> chunkFiles = filesToBackup.subList(i, end);
+      List<Path> tempFileList = new ArrayList<>(filesToBackup);
+      List<Path> chunkFiles = tempFileList.subList(i, end);
 
       Runnable backupTask = () -> {
         try {

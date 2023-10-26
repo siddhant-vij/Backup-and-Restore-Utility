@@ -19,6 +19,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -81,6 +82,31 @@ public class FileOperationsUtil {
       Files.createDirectories(dest.getParent());
     }
     Files.copy(src, dest, StandardCopyOption.REPLACE_EXISTING);
+  }
+
+  public static boolean matchPattern(String filePath, List<String> patterns) {
+    if (patterns.contains("all")) {
+      return true;
+    }
+    if (patterns.contains("none")) {
+      return false;
+    }
+
+    for (String pattern : patterns) {
+      if (!pattern.contains("/") && !pattern.contains("\\")) {
+        if (!pattern.endsWith("."))
+          pattern = "^.*\\\\" + pattern + ".*$";
+        else
+          pattern = "^.*\\\\" + pattern.split("\\.")[0] + "\\..*$";
+      }
+      // This could be expanded to cover more use cases like case-sensitivity,
+      // wildcards, folder-specificity, special characters, combinations, etc.
+
+      if (Pattern.matches(pattern, filePath)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   public static void createPartitionedBackup(List<Path> files, Path sourcePath, Path backupDir,

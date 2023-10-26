@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -18,6 +20,10 @@ public class Configuration {
   private boolean enableCompression;
   private boolean enableEncryption;
   private String aesFileKeyDir;
+  private List<String> backupIncludePatterns;
+  private List<String> backupExcludePatterns;
+  private List<String> restoreIncludePatterns;
+  private List<String> restoreExcludePatterns;
 
   private void readJsonConfig(String configFilePath) {
     JSONParser parser = new JSONParser();
@@ -51,6 +57,50 @@ public class Configuration {
       }
       if (configJson.get("aesFileKeyDir") != null) {
         aesFileKeyDir = (String) configJson.get("aesFileKeyDir");
+      }
+      if (configJson.get("backupIncludePatterns") != null) {
+        Object backupIncludeObj = configJson.get("backupIncludePatterns");
+        if (backupIncludeObj instanceof List) {
+          List<?> tempList = (List<?>) backupIncludeObj;
+          if (tempList.stream().allMatch(item -> item instanceof String)) {
+            backupIncludePatterns = tempList.stream()
+                .map(Object::toString)
+                .collect(Collectors.toList());
+          }
+        }
+      }
+      if (configJson.get("backupExcludePatterns") != null) {
+        Object backupExcludeObj = configJson.get("backupExcludePatterns");
+        if (backupExcludeObj instanceof List) {
+          List<?> tempList = (List<?>) backupExcludeObj;
+          if (tempList.stream().allMatch(item -> item instanceof String)) {
+            backupExcludePatterns = tempList.stream()
+                .map(Object::toString)
+                .collect(Collectors.toList());
+          }
+        }
+      }
+      if (configJson.get("restoreIncludePatterns") != null) {
+        Object restoreIncludeObj = configJson.get("restoreIncludePatterns");
+        if (restoreIncludeObj instanceof List) {
+          List<?> tempList = (List<?>) restoreIncludeObj;
+          if (tempList.stream().allMatch(item -> item instanceof String)) {
+            restoreIncludePatterns = tempList.stream()
+                .map(Object::toString)
+                .collect(Collectors.toList());
+          }
+        }
+      }
+      if (configJson.get("restoreExcludePatterns") != null) {
+        Object restoreExcludeObj = configJson.get("restoreExcludePatterns");
+        if (restoreExcludeObj instanceof List) {
+          List<?> tempList = (List<?>) restoreExcludeObj;
+          if (tempList.stream().allMatch(item -> item instanceof String)) {
+            restoreExcludePatterns = tempList.stream()
+                .map(Object::toString)
+                .collect(Collectors.toList());
+          }
+        }
       }
     } catch (IOException | ParseException | URISyntaxException e) {
       System.out.println("Error reading configuration: " + e.getMessage());
@@ -102,16 +152,24 @@ public class Configuration {
     return enableEncryption;
   }
 
-  public void setEnableEncryption(boolean enableEncryption) {
-    this.enableEncryption = enableEncryption;
-  }
-
   public String getAesFileKeyDir() {
     return aesFileKeyDir;
   }
 
-  public void setAesFileKeyDir(String aesFileKeyDir) {
-    this.aesFileKeyDir = aesFileKeyDir;
+  public List<String> getBackupIncludePatterns() {
+    return backupIncludePatterns;
+  }
+
+  public List<String> getBackupExcludePatterns() {
+    return backupExcludePatterns;
+  }
+
+  public List<String> getRestoreIncludePatterns() {
+    return restoreIncludePatterns;
+  }
+
+  public List<String> getRestoreExcludePatterns() {
+    return restoreExcludePatterns;
   }
 
   public void print() {
