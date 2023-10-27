@@ -4,9 +4,13 @@
   "defaultRestoreDir":"path//to//Restore",
   "enableCompression":true,
   "enableEncryption":true,
-  "aesFileKeyDir":"./keys",
+  "aesFileKeyDir":"./resources",
   "backupIncludePatterns": ["all"],
   "backupExcludePatterns": ["none"],
   "restoreIncludePatterns": ["all"],
-  "restoreExcludePatterns": ["none"]
+  "restoreExcludePatterns": ["none"],
+  "enableIntegrityCheckOnBackup":true,
+  "enableIntegrityCheckOnRestore":true,
+  "hashAlgorithm":"SHA256",
+  "hashFileDir":"./resources"
 }

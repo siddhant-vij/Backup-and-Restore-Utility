@@ -14,10 +14,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Timer;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -31,14 +33,20 @@ public class RestoreManager {
   private String encryptionPassword = null;
   private List<String> restoreIncludePatterns;
   private List<String> restoreExcludePatterns;
+  private ConcurrentHashMap<String, String> storedFileHashes;
+  private String hashFileDir;
 
   public RestoreManager(Configuration config) {
     this.config = config;
     this.restoreIncludePatterns = config.getRestoreIncludePatterns();
     this.restoreExcludePatterns = config.getRestoreExcludePatterns();
+    this.hashFileDir = config.getHashFileDir();
   }
 
   public void restore() throws IOException {
+    if (config.isEnableIntegrityCheckOnRestore()) {
+      this.storedFileHashes = FileOperationsUtil.loadStoredFileHashes(hashFileDir);
+    }
     Path backupZipPath = Path.of(config.getDefaultBackupDir(), "backup.zip");
 
     if (config.isEnableEncryption()) {
@@ -95,6 +103,7 @@ public class RestoreManager {
           "\nNo. of files to restore: " + totalFiles + " with disk space: " + totalBytes / (1024 * 1024)
               + " MB");
       Timer timer = FileOperationsUtil.displayProgressRestore(bytesRestored, totalBytes);
+      AtomicBoolean shouldContinue = new AtomicBoolean(true);
 
       try (ZipInputStream zis = new ZipInputStream(new FileInputStream(backupZipPath.toFile()))) {
         ZipEntry entry;
@@ -119,6 +128,17 @@ public class RestoreManager {
           }
 
           final byte[] finalData = data;
+          if (config.isEnableIntegrityCheckOnRestore()) {
+            String generatedHash = FileOperationsUtil.generateHash(finalData, config.getHashAlgorithm());
+            String storedHash = storedFileHashes.get(finalEntry.getName());
+            if (storedHash == null || !generatedHash.equals(storedHash)) {
+              System.out.println("\n\nIntegrity check failed for file: " + finalEntry.getName());
+              shouldContinue.set(false);
+              timer.cancel();
+              break;
+            }
+          }
+
           Runnable restoreTask = () -> {
             try {
               Path destFile = restorePath.resolve(finalEntry.getName());
@@ -140,6 +160,10 @@ public class RestoreManager {
       restoreExecutor.shutdown();
       try {
         restoreExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        if (!shouldContinue.get()) {
+          System.out.println("\nRestore operation terminated due to failed integrity check.\n");
+          return;
+        }
         System.out.println("\nRestore complete!");
         timer.cancel();
       } catch (InterruptedException e) {

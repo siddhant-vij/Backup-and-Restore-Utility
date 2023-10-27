@@ -24,6 +24,10 @@ public class Configuration {
   private List<String> backupExcludePatterns;
   private List<String> restoreIncludePatterns;
   private List<String> restoreExcludePatterns;
+  private boolean enableIntegrityCheckOnBackup;
+  private boolean enableIntegrityCheckOnRestore;
+  private String hashAlgorithm;
+  private String hashFileDir;
 
   private void readJsonConfig(String configFilePath) {
     JSONParser parser = new JSONParser();
@@ -102,6 +106,18 @@ public class Configuration {
           }
         }
       }
+      if (configJson.get("enableIntegrityCheckOnBackup") != null) {
+        enableIntegrityCheckOnBackup = (Boolean) configJson.get("enableIntegrityCheckOnBackup");
+      }
+      if (configJson.get("enableIntegrityCheckOnRestore") != null) {
+        enableIntegrityCheckOnRestore = (Boolean) configJson.get("enableIntegrityCheckOnRestore");
+      }
+      if (configJson.get("hashAlgorithm") != null) {
+        hashAlgorithm = (String) configJson.get("hashAlgorithm");
+      }
+      if (configJson.get("hashFileDir") != null) {
+        hashFileDir = (String) configJson.get("hashFileDir");
+      }
     } catch (IOException | ParseException | URISyntaxException e) {
       System.out.println("Error reading configuration: " + e.getMessage());
       throw new RuntimeException(e);
@@ -170,6 +186,22 @@ public class Configuration {
 
   public List<String> getRestoreExcludePatterns() {
     return restoreExcludePatterns;
+  }
+
+  public boolean isEnableIntegrityCheckOnBackup() {
+    return enableIntegrityCheckOnBackup;
+  }
+
+  public boolean isEnableIntegrityCheckOnRestore() {
+    return enableIntegrityCheckOnRestore;
+  }
+
+  public String getHashAlgorithm() {
+    return hashAlgorithm;
+  }
+
+  public String getHashFileDir() {
+    return hashFileDir;
   }
 
   public void print() {

@@ -19,6 +19,7 @@ import java.util.Queue;
 import java.util.Timer;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
@@ -32,11 +33,17 @@ public class BackupManager {
   private final int chunkSize = 20; // Change this & check performance!
   List<String> includePatterns;
   List<String> excludePatterns;
+  private boolean enableIntegrityCheck;
+  private String hashAlgorithm;
+  private String hashFileDir;
 
   public BackupManager(Configuration config) {
     this.config = config;
     this.includePatterns = config.getBackupIncludePatterns();
     this.excludePatterns = config.getBackupExcludePatterns();
+    this.enableIntegrityCheck = config.isEnableIntegrityCheckOnBackup();
+    this.hashAlgorithm = config.getHashAlgorithm();
+    this.hashFileDir = config.getHashFileDir();
   }
 
   public void backup() throws IOException {
@@ -79,6 +86,7 @@ public class BackupManager {
     }
 
     final SecretKey aesKeyFinal = aesKey;
+    final ConcurrentHashMap<String, String> fileHashes = new ConcurrentHashMap<>();
     for (int i = 0; i < filesToBackup.size(); i += chunkSize) {
       int end = Math.min(i + chunkSize, filesToBackup.size());
       List<Path> tempFileList = new ArrayList<>(filesToBackup);
@@ -87,7 +95,8 @@ public class BackupManager {
       Runnable backupTask = () -> {
         try {
           FileOperationsUtil.createPartitionedBackup(chunkFiles, sourcePath, backupDir, config.isEnableCompression(),
-              config.isEnableEncryption(), aesKeyFinal, bytesBackedUp, totalBytes);
+              config.isEnableEncryption(), aesKeyFinal, bytesBackedUp, totalBytes, enableIntegrityCheck, hashAlgorithm,
+              fileHashes);
         } catch (IOException e) {
           e.printStackTrace();
         }
@@ -105,7 +114,8 @@ public class BackupManager {
         }
       }
       FileOperationsUtil.mergeTemporaryFilesIntoOne(backupDir.resolve("backup.zip"), tempZips,
-          config.isEnableEncryption(), aesKey, bytesBackedUp, totalBytes);
+          config.isEnableEncryption(), aesKey, bytesBackedUp, totalBytes, enableIntegrityCheck, fileHashes,
+          hashFileDir);
       KeyManagementUtil.saveKeyToFile(aesKeyFinal, config.getAesFileKeyDir() + "/aes.key", encryptionPassword);
       System.out.println("\nBackup complete!");
       timer.cancel();
