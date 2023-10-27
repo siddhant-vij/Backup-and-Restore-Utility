@@ -24,8 +24,7 @@ public class Configuration {
   private List<String> backupExcludePatterns;
   private List<String> restoreIncludePatterns;
   private List<String> restoreExcludePatterns;
-  private boolean enableIntegrityCheckOnBackup;
-  private boolean enableIntegrityCheckOnRestore;
+  private boolean enableIntegrityCheck;
   private String hashAlgorithm;
   private String hashFileDir;
 
@@ -106,11 +105,8 @@ public class Configuration {
           }
         }
       }
-      if (configJson.get("enableIntegrityCheckOnBackup") != null) {
-        enableIntegrityCheckOnBackup = (Boolean) configJson.get("enableIntegrityCheckOnBackup");
-      }
-      if (configJson.get("enableIntegrityCheckOnRestore") != null) {
-        enableIntegrityCheckOnRestore = (Boolean) configJson.get("enableIntegrityCheckOnRestore");
+      if (configJson.get("enableIntegrityCheck") != null) {
+        enableIntegrityCheck = (Boolean) configJson.get("enableIntegrityCheck");
       }
       if (configJson.get("hashAlgorithm") != null) {
         hashAlgorithm = (String) configJson.get("hashAlgorithm");
@@ -188,12 +184,8 @@ public class Configuration {
     return restoreExcludePatterns;
   }
 
-  public boolean isEnableIntegrityCheckOnBackup() {
-    return enableIntegrityCheckOnBackup;
-  }
-
-  public boolean isEnableIntegrityCheckOnRestore() {
-    return enableIntegrityCheckOnRestore;
+  public boolean isEnableIntegrityCheck() {
+    return enableIntegrityCheck;
   }
 
   public String getHashAlgorithm() {

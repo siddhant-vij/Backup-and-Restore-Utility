@@ -44,7 +44,7 @@ public class RestoreManager {
   }
 
   public void restore() throws IOException {
-    if (config.isEnableIntegrityCheckOnRestore()) {
+    if (config.isEnableIntegrityCheck()) {
       this.storedFileHashes = FileOperationsUtil.loadStoredFileHashes(hashFileDir);
     }
     Path backupZipPath = Path.of(config.getDefaultBackupDir(), "backup.zip");
@@ -128,7 +128,7 @@ public class RestoreManager {
           }
 
           final byte[] finalData = data;
-          if (config.isEnableIntegrityCheckOnRestore()) {
+          if (config.isEnableIntegrityCheck()) {
             String generatedHash = FileOperationsUtil.generateHash(finalData, config.getHashAlgorithm());
             String storedHash = storedFileHashes.get(finalEntry.getName());
             if (storedHash == null || !generatedHash.equals(storedHash)) {

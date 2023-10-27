@@ -41,7 +41,7 @@ public class BackupManager {
     this.config = config;
     this.includePatterns = config.getBackupIncludePatterns();
     this.excludePatterns = config.getBackupExcludePatterns();
-    this.enableIntegrityCheck = config.isEnableIntegrityCheckOnBackup();
+    this.enableIntegrityCheck = config.isEnableIntegrityCheck();
     this.hashAlgorithm = config.getHashAlgorithm();
     this.hashFileDir = config.getHashFileDir();
   }

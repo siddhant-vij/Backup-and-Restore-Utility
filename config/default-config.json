@@ -9,8 +9,7 @@
   "backupExcludePatterns": ["none"],
   "restoreIncludePatterns": ["all"],
   "restoreExcludePatterns": ["none"],
-  "enableIntegrityCheckOnBackup":true,
-  "enableIntegrityCheckOnRestore":true,
+  "enableIntegrityCheck":true,
   "hashAlgorithm":"SHA256",
   "hashFileDir":"./resources"
 }
