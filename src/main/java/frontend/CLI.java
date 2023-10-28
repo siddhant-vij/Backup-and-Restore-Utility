@@ -1,14 +1,14 @@
-package main.java.cli;
-
-import java.io.IOException;
+package main.java.frontend;
 
 import main.java.backup.BackupManager;
 import main.java.config.Configuration;
 import main.java.restore.RestoreManager;
 
-public class CommandLineInterface {
+import java.io.IOException;
 
-  public void run() {
+public class CLI {
+
+  public void cliEntry() {
     Configuration config = new Configuration();
     BackupManager backupManager = new BackupManager(config);
     RestoreManager restoreManager = new RestoreManager(config);

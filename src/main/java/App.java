@@ -1,10 +1,10 @@
 package main.java;
 
-import main.java.cli.CommandLineInterface;
+import main.java.frontend.CLI;
 
 public class App {
   public static void main(String[] args) {
-    CommandLineInterface cli = new CommandLineInterface();
-    cli.run();
+    new CLI().cliEntry();
+    // Can be further expanded to include GUI & WEB - Frontend UIs
   }
 }

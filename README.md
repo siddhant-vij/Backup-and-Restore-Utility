@@ -22,6 +22,7 @@ A simple terminal-based Backup & Restore Utility in Java. This tool allows the u
 - **Encryption Decryption**: Encrypt & decrypt backup files for added security.
 - **Inclusion/Exclusion**: Specify file patterns to include/exclude from backup & restore.
 - **Backup Integrity Checks**: Verify the integrity of backup & restore files.
+- **Code Refactoring**: Refactor the codebase to improve readability and maintainability.
 
 ## Contributing
 
@@ -44,10 +45,9 @@ Contributions are what make the open-source community such an amazing place to l
 
 ## Future Improvements
 
-- **Incremental Backups**: Only back up files that have changed since the last (any) backup.
 - **Differential Backups**: Only back up files that have changed since the last (full) backup.
+- **Incremental Backups**: Only back up files that have changed since the last (any) backup.
 - **Log Generation**: Generate logs detailing the backup and restore operations.
-- **Code Refactoring**: Refactor the codebase to improve readability and maintainability.
 - **Disk Space Checks**: Warn user if not enough disk space is available for backup.
 - **Priority Backups**: Allow setting priority for specific files or directories in backup.
 - **Data Deduplication**: Check for and eliminate duplicate data to save space.

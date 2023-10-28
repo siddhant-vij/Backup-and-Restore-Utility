@@ -1,9 +1,12 @@
 package main.java.util;
 
+import main.java.config.Configuration;
+
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -130,116 +133,144 @@ public class FileOperationsUtil {
     return sb.toString();
   }
 
-  public static void createPartitionedBackup(List<Path> files, Path sourcePath, Path backupDir,
-      boolean enableCompression, boolean enableEncryption, SecretKey aesKey, AtomicLong bytesBackedUp,
-      AtomicLong totalBytesProcessed, boolean enableIntegrityCheck, String hashAlgorithm,
-      ConcurrentHashMap<String, String> fileHashes) throws IOException {
-
+  private static Path generateTempFilePath(Path backupDir) {
     String tempFileName = "temp_" + UUID.randomUUID().toString() + ".zip";
-    Path tempFile = backupDir.resolve(tempFileName);
+    return backupDir.resolve(tempFileName);
+  }
 
-    try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(tempFile.toFile()))) {
-      if (enableCompression) {
-        zos.setLevel(9);
-      }
+  private static ZipOutputStream initializeZipOutputStream(Path tempFile, boolean enableCompression)
+      throws FileNotFoundException {
+    ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(tempFile.toFile()));
+    if (enableCompression) {
+      zos.setLevel(9); // Maximum compression level
+    }
+    return zos;
+  }
 
+  private static void processFileForBackup(Path file, ZipOutputStream zos, Path sourcePath, boolean enableEncryption,
+      SecretKey aesKey, AtomicLong bytesBackedUp, AtomicLong totalBytesProcessed, boolean enableIntegrityCheck,
+      String hashAlgorithm, ConcurrentHashMap<String, String> fileHashes) throws Exception {
+    BasicFileAttributes attrs = Files.readAttributes(file, BasicFileAttributes.class);
+    ZipEntry zipEntry = new ZipEntry(sourcePath.relativize(file).toString());
+    zos.putNextEntry(zipEntry);
+
+    byte[] bytes = Files.readAllBytes(file);
+
+    if (enableIntegrityCheck) {
+      String hash = generateHash(bytes, hashAlgorithm);
+      fileHashes.put(zipEntry.getName(), hash);
+    }
+
+    if (enableEncryption) {
+      bytes = KeyManagementUtil.encryptAES(bytes, aesKey);
+    }
+
+    zos.write(bytes);
+    zos.closeEntry();
+    bytesBackedUp.addAndGet(attrs.size());
+    totalBytesProcessed.addAndGet(attrs.size());
+  }
+
+  public static void createPartitionedBackup(List<Path> files, Path sourcePath, Path backupDir, Configuration config,
+      SecretKey aesKey, AtomicLong bytesBackedUp, AtomicLong totalBytesProcessed,
+      ConcurrentHashMap<String, String> fileHashes) throws IOException {
+    Path tempFile = generateTempFilePath(backupDir);
+    try (ZipOutputStream zos = initializeZipOutputStream(tempFile, config.isEnableCompression())) {
       for (Path file : files) {
-        BasicFileAttributes attrs = Files.readAttributes(file, BasicFileAttributes.class);
-        Path effectivePath = sourcePath.relativize(file);
-        ZipEntry zipEntry = new ZipEntry(effectivePath.toString());
-        zos.putNextEntry(zipEntry);
-
-        byte[] bytes = Files.readAllBytes(file);
-
-        if (enableIntegrityCheck) {
-          String hash = generateHash(bytes, hashAlgorithm);
-          fileHashes.put(effectivePath.toString(), hash);
-        }
-
-        if (enableEncryption) {
-          bytes = KeyManagementUtil.encryptAES(bytes, aesKey);
-        }
-
-        zos.write(bytes, 0, bytes.length);
-        zos.closeEntry();
-        bytesBackedUp.addAndGet(attrs.size());
-        totalBytesProcessed.addAndGet(attrs.size());
+        processFileForBackup(file, zos, sourcePath, config.isEnableEncryption(), aesKey, bytesBackedUp,
+            totalBytesProcessed, config.isEnableIntegrityCheck(), config.getHashAlgorithm(), fileHashes);
       }
     } catch (Exception e) {
       e.printStackTrace();
     }
   }
 
-  public static void mergeTemporaryFilesIntoOne(Path outputFile, List<Path> tempFiles, boolean enableEncryption,
-      SecretKey aesKey, AtomicLong totalBytesWritten, AtomicLong totalBytesProcessed, boolean enableIntegrityCheck,
-      ConcurrentHashMap<String, String> fileHashes, String hashFileKeyDir) throws IOException {
-    List<Path> filesToDelete = Collections.synchronizedList(new ArrayList<>());
+  private static byte[] readFromZipInputStream(ZipInputStream zis) throws IOException {
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    byte[] buffer = new byte[8 * 1024];
+    int len;
+    while ((len = zis.read(buffer)) > 0) {
+      baos.write(buffer, 0, len);
+    }
+    return baos.toByteArray();
+  }
 
-    try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(outputFile.toFile()))) {
-      ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
-
-      for (Path tempFile : tempFiles) {
-        executor.submit(() -> {
-          try (ZipInputStream zis = new ZipInputStream(new FileInputStream(tempFile.toFile()))) {
-            ZipEntry entry;
-            while ((entry = zis.getNextEntry()) != null) {
-              byte[] buffer = new byte[8 * 1024];
-              ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-              int len;
-              while ((len = zis.read(buffer)) > 0) {
-                baos.write(buffer, 0, len);
-              }
-
-              byte[] fileData = baos.toByteArray();
-              synchronized (zos) {
-                zos.putNextEntry(new ZipEntry(entry.getName()));
-                zos.write(fileData, 0, fileData.length);
-                zos.closeEntry();
-                totalBytesWritten.addAndGet(fileData.length);
-              }
-              zis.closeEntry();
-            }
-          } catch (IOException e) {
-            e.printStackTrace();
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
-          filesToDelete.add(tempFile);
-        });
+  private static void processTempFile(Path tempFile, ZipOutputStream zos, AtomicLong totalBytesWritten) {
+    try (ZipInputStream zis = new ZipInputStream(new FileInputStream(tempFile.toFile()))) {
+      ZipEntry entry;
+      while ((entry = zis.getNextEntry()) != null) {
+        byte[] fileData = readFromZipInputStream(zis);
+        writeToZipOutputStream(entry, fileData, zos, totalBytesWritten);
+        zis.closeEntry();
       }
-      executor.shutdown();
-      try {
-        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
 
-      if (enableIntegrityCheck) {
-        try (BufferedOutputStream fos = new BufferedOutputStream(
-            new FileOutputStream(hashFileKeyDir + "/hashes.json"))) {
-          fos.write("{".getBytes());
-          Iterator<Map.Entry<String, String>> iterator = fileHashes.entrySet().iterator();
-          while (iterator.hasNext()) {
-            Map.Entry<String, String> entry = iterator.next();
-            String jsonEntry = "\"" + entry.getKey() + "\":\"" + entry.getValue() + "\"";
-            fos.write(jsonEntry.getBytes());
-            if (iterator.hasNext()) {
-              fos.write(",".getBytes());
-            }
-          }
-          fos.write("}".getBytes());
+  private static void writeToZipOutputStream(ZipEntry entry, byte[] fileData, ZipOutputStream zos,
+      AtomicLong totalBytesWritten) throws IOException {
+    synchronized (zos) {
+      zos.putNextEntry(new ZipEntry(entry.getName()));
+      zos.write(fileData, 0, fileData.length);
+      zos.closeEntry();
+      totalBytesWritten.addAndGet(fileData.length);
+    }
+  }
+
+  private static void shutdownExecutor(ExecutorService executor) {
+    executor.shutdown();
+    try {
+      executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+  }
+
+  private static void createJsonFromHashes(String hashFileKeyDir, ConcurrentHashMap<String, String> fileHashes)
+      throws IOException {
+    try (BufferedOutputStream fos = new BufferedOutputStream(new FileOutputStream(hashFileKeyDir + "/hashes.json"))) {
+      fos.write("{".getBytes());
+      Iterator<Map.Entry<String, String>> iterator = fileHashes.entrySet().iterator();
+      while (iterator.hasNext()) {
+        Map.Entry<String, String> entry = iterator.next();
+        String jsonEntry = "\"" + entry.getKey() + "\":\"" + entry.getValue() + "\"";
+        fos.write(jsonEntry.getBytes());
+        if (iterator.hasNext()) {
+          fos.write(",".getBytes());
         }
       }
+      fos.write("}".getBytes());
     }
+  }
 
-    for (Path tempFile : filesToDelete) {
+  private static void deleteTempFile(List<Path> tempFiles) {
+    for (Path tempFile : tempFiles) {
       try {
         Files.deleteIfExists(tempFile.toAbsolutePath());
       } catch (IOException e) {
         e.printStackTrace();
       }
     }
+  }
+
+  public static void mergeTemporaryFilesIntoOne(Path outputFile, List<Path> tempFiles, AtomicLong totalBytesWritten,
+      ConcurrentHashMap<String, String> fileHashes, Configuration config) throws IOException {
+    List<Path> filesToDelete = Collections.synchronizedList(new ArrayList<>());
+    try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(outputFile.toFile()))) {
+      ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+      for (Path tempFile : tempFiles) {
+        executor.submit(() -> {
+          processTempFile(tempFile, zos, totalBytesWritten);
+          filesToDelete.add(tempFile);
+        });
+      }
+      shutdownExecutor(executor);
+      if (config.isEnableIntegrityCheck()) {
+        createJsonFromHashes(config.getHashFileDir(), fileHashes);
+      }
+    }
+    deleteTempFile(tempFiles);
   }
 
   public static ConcurrentHashMap<String, String> loadStoredFileHashes(String hashFileDir) {

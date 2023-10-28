@@ -31,97 +31,121 @@ public class BackupManager {
   private final Configuration config;
   private String encryptionPassword = null;
   private final int chunkSize = 20; // Change this & check performance!
-  List<String> includePatterns;
-  List<String> excludePatterns;
-  private boolean enableIntegrityCheck;
-  private String hashAlgorithm;
-  private String hashFileDir;
 
   public BackupManager(Configuration config) {
     this.config = config;
-    this.includePatterns = config.getBackupIncludePatterns();
-    this.excludePatterns = config.getBackupExcludePatterns();
-    this.enableIntegrityCheck = config.isEnableIntegrityCheck();
-    this.hashAlgorithm = config.getHashAlgorithm();
-    this.hashFileDir = config.getHashFileDir();
   }
 
   public void backup() throws IOException {
+    initializeEncryption();
+    ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
+    BackupFileData backupFileData = gatherFilesToBackupAndCalculateTotalBytes();
+    Queue<Path> filesToBackup = backupFileData.filesToBackup();
+    AtomicLong totalBytes = backupFileData.totalBytes();
+    Path sourcePath = Path.of(config.getDefaultSourceDir());
+    Path backupDir = Path.of(config.getDefaultBackupDir());
+    AtomicLong bytesBackedUp = new AtomicLong(0);
+    System.out.println("\nNo. of files to backup: " + filesToBackup.size() + " with disk space: "
+        + totalBytes.get() / (1024 * 1024) + " MB");
+    FileOperationsUtil.checkAndCreateDir(backupDir);
+    Timer timer = FileOperationsUtil.displayProgressBackup(bytesBackedUp, 2 * totalBytes.get());
+    SecretKey aesKey = initializeAESKey();
+    final ConcurrentHashMap<String, String> fileHashes = new ConcurrentHashMap<>();
+    executeBackupTasks(filesToBackup, totalBytes, sourcePath, backupDir, executorService, aesKey, fileHashes, timer,
+        bytesBackedUp);
+  }
+
+  private void initializeEncryption() {
     if (config.isEnableEncryption()) {
       System.out.print("\nEnter password for encryption: ");
       encryptionPassword = new String(System.console().readPassword());
     }
+  }
 
-    ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
-    AtomicLong bytesBackedUp = new AtomicLong(0);
-    Path sourcePath = Path.of(config.getDefaultSourceDir());
-    Path backupDir = Path.of(config.getDefaultBackupDir());
+  private record BackupFileData(Queue<Path> filesToBackup, AtomicLong totalBytes) {
+  }
 
+  private BackupFileData gatherFilesToBackupAndCalculateTotalBytes() throws IOException {
     Queue<Path> filesToBackup = new ConcurrentLinkedQueue<>();
     AtomicLong totalBytes = new AtomicLong(0);
-
+    Path sourcePath = Path.of(config.getDefaultSourceDir());
     Files.walkFileTree(sourcePath, EnumSet.noneOf(FileVisitOption.class), Integer.MAX_VALUE,
         new SimpleFileVisitor<Path>() {
           @Override
           public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-            if (FileOperationsUtil.matchPattern(file.toString(), includePatterns) &&
-                !FileOperationsUtil.matchPattern(file.toString(), excludePatterns)) {
+            if (FileOperationsUtil.matchPattern(file.toString(), config.getBackupIncludePatterns())
+                && !FileOperationsUtil.matchPattern(file.toString(), config.getBackupExcludePatterns())) {
               filesToBackup.add(file);
               totalBytes.addAndGet(attrs.size());
             }
             return FileVisitResult.CONTINUE;
           }
         });
+    return new BackupFileData(filesToBackup, totalBytes);
+  }
 
-    long totalFiles = filesToBackup.size();
-    System.out.println(
-        "\nNo. of files to backup: " + totalFiles + " with disk space: " + totalBytes.get() / (1024 * 1024) + " MB");
-    FileOperationsUtil.checkAndCreateDir(backupDir);
-    Timer timer = FileOperationsUtil.displayProgressBackup(bytesBackedUp, 2 * totalBytes.get());
+  private SecretKey initializeAESKey() {
     SecretKey aesKey = null;
     try {
       aesKey = KeyManagementUtil.generateAESKey(encryptionPassword);
     } catch (Exception e) {
       e.printStackTrace();
     }
+    return aesKey;
+  }
 
-    final SecretKey aesKeyFinal = aesKey;
-    final ConcurrentHashMap<String, String> fileHashes = new ConcurrentHashMap<>();
+  private void executeBackupTasks(Queue<Path> filesToBackup, AtomicLong totalBytes, Path sourcePath, Path backupDir,
+      ExecutorService executorService, SecretKey aesKey, ConcurrentHashMap<String, String> fileHashes, Timer timer,
+      AtomicLong bytesBackedUp) {
+    submitBackupTasks(filesToBackup, totalBytes, sourcePath, backupDir, executorService, aesKey, fileHashes,
+        bytesBackedUp);
+    waitForTaskCompletion(executorService);
+    finalizeBackup(backupDir, aesKey, bytesBackedUp, totalBytes, fileHashes, timer);
+  }
+
+  private void submitBackupTasks(Queue<Path> filesToBackup, AtomicLong totalBytes, Path sourcePath, Path backupDir,
+      ExecutorService executorService, SecretKey aesKey, ConcurrentHashMap<String, String> fileHashes,
+      AtomicLong bytesBackedUp) {
     for (int i = 0; i < filesToBackup.size(); i += chunkSize) {
       int end = Math.min(i + chunkSize, filesToBackup.size());
       List<Path> tempFileList = new ArrayList<>(filesToBackup);
       List<Path> chunkFiles = tempFileList.subList(i, end);
-
       Runnable backupTask = () -> {
         try {
-          FileOperationsUtil.createPartitionedBackup(chunkFiles, sourcePath, backupDir, config.isEnableCompression(),
-              config.isEnableEncryption(), aesKeyFinal, bytesBackedUp, totalBytes, enableIntegrityCheck, hashAlgorithm,
-              fileHashes);
+          FileOperationsUtil.createPartitionedBackup(chunkFiles, sourcePath, backupDir, config, aesKey, bytesBackedUp,
+              totalBytes, fileHashes);
         } catch (IOException e) {
           e.printStackTrace();
         }
       };
       executorService.submit(backupTask);
     }
+  }
 
+  private void waitForTaskCompletion(ExecutorService executorService) {
     executorService.shutdown();
     try {
       executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+    } catch (InterruptedException e) {
+      System.out.println("\nBackup Interrupted!");
+      e.printStackTrace();
+    }
+  }
+
+  private void finalizeBackup(Path backupDir, SecretKey aesKey, AtomicLong bytesBackedUp, AtomicLong totalBytes,
+      ConcurrentHashMap<String, String> fileHashes, Timer timer) {
+    try {
       List<Path> tempZips = new ArrayList<>();
       try (DirectoryStream<Path> stream = Files.newDirectoryStream(backupDir, "temp_*.zip")) {
         for (Path entry : stream) {
           tempZips.add(entry);
         }
       }
-      FileOperationsUtil.mergeTemporaryFilesIntoOne(backupDir.resolve("backup.zip"), tempZips,
-          config.isEnableEncryption(), aesKey, bytesBackedUp, totalBytes, enableIntegrityCheck, fileHashes,
-          hashFileDir);
-      KeyManagementUtil.saveKeyToFile(aesKeyFinal, config.getAesFileKeyDir() + "/aes.key", encryptionPassword);
+      FileOperationsUtil.mergeTemporaryFilesIntoOne(backupDir.resolve("backup.zip"), tempZips, bytesBackedUp,
+          fileHashes, config);
+      KeyManagementUtil.saveKeyToFile(aesKey, config.getAesFileKeyDir() + "/aes.key", encryptionPassword);
       System.out.println("\nBackup complete!");
       timer.cancel();
-    } catch (InterruptedException e) {
-      System.out.println("\nBackup Interrupted!");
-      e.printStackTrace();
     } catch (Exception e) {
       System.out.println("\nSaving key to file failed!");
       e.printStackTrace();
