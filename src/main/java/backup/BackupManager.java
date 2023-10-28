@@ -30,7 +30,7 @@ public class BackupManager {
 
   private final Configuration config;
   private String encryptionPassword = null;
-  private final int chunkSize = 20; // Change this & check performance!
+  private final int CHUNK_SIZE = 20; // Change this & check performance!
 
   public BackupManager(Configuration config) {
     this.config = config;
@@ -44,9 +44,12 @@ public class BackupManager {
     AtomicLong totalBytes = backupFileData.totalBytes();
     Path sourcePath = Path.of(config.getDefaultSourceDir());
     Path backupDir = Path.of(config.getDefaultBackupDir());
+    boolean isEnoughSpace = FileOperationsUtil.checkDiskSpace(totalBytes.get(), backupDir);
+    if (!isEnoughSpace) {
+      System.exit(1);
+    }
     AtomicLong bytesBackedUp = new AtomicLong(0);
-    System.out.println("\nNo. of files to backup: " + filesToBackup.size() + " with disk space: "
-        + totalBytes.get() / (1024 * 1024) + " MB");
+    System.out.println("\nNo. of files to backup: " + filesToBackup.size());
     FileOperationsUtil.checkAndCreateDir(backupDir);
     Timer timer = FileOperationsUtil.displayProgressBackup(bytesBackedUp, 2 * totalBytes.get());
     SecretKey aesKey = initializeAESKey();
@@ -106,8 +109,8 @@ public class BackupManager {
   private void submitBackupTasks(Queue<Path> filesToBackup, AtomicLong totalBytes, Path sourcePath, Path backupDir,
       ExecutorService executorService, SecretKey aesKey, ConcurrentHashMap<String, String> fileHashes,
       AtomicLong bytesBackedUp) {
-    for (int i = 0; i < filesToBackup.size(); i += chunkSize) {
-      int end = Math.min(i + chunkSize, filesToBackup.size());
+    for (int i = 0; i < filesToBackup.size(); i += CHUNK_SIZE) {
+      int end = Math.min(i + CHUNK_SIZE, filesToBackup.size());
       List<Path> tempFileList = new ArrayList<>(filesToBackup);
       List<Path> chunkFiles = tempFileList.subList(i, end);
       Runnable backupTask = () -> {

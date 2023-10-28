@@ -5,6 +5,7 @@ import main.java.config.Configuration;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -38,6 +39,8 @@ import java.util.zip.ZipOutputStream;
 import javax.crypto.SecretKey;
 
 public class FileOperationsUtil {
+  private static final double ADDITIONAL_SPACE_REQUIRED = 5.0;
+
   public static void checkAndCreateDir(Path dir) throws AccessDeniedException, IOException {
     Path parentPath = (dir.getParent() != null) ? dir.getParent() : dir;
     if (!Files.isWritable(parentPath)) {
@@ -57,11 +60,9 @@ public class FileOperationsUtil {
           timer.cancel();
         }
         double displayedPercentage = Math.min(100.0, rawPercentage);
-        System.out.printf("\nProgress at time t + %d s: %.2f%% (%d MB / %d MB)",
+        System.out.printf("\nProgress at time t + %d s: %.2f%%",
             (int) (System.currentTimeMillis() / 1000 - startTime / 1000),
-            displayedPercentage,
-            totalBytesProcessed.get() / (1024 * 1024 * 2),
-            totalBytesToProcess / (1024 * 1024 * 2));
+            displayedPercentage);
       }
     }, 0, 5000);
     return timer;
@@ -77,11 +78,9 @@ public class FileOperationsUtil {
         if (percentage >= 100.0) {
           timer.cancel();
         }
-        System.out.printf("\nProgress at time t + %d s: %.2f%% (%d MB / %d MB)",
+        System.out.printf("\nProgress at time t + %d s: %.2f%%",
             (int) (System.currentTimeMillis() / 1000 - startTime / 1000),
-            percentage,
-            totalBytesProcessed.get() / (1024 * 1024),
-            totalBytesToProcess / (1024 * 1024));
+            percentage);
       }
     }, 0, 5000);
     return timer;
@@ -319,6 +318,25 @@ public class FileOperationsUtil {
     } catch (Exception e) {
       System.out.println("Error reading stored hash values: " + e.getMessage());
       return new ConcurrentHashMap<>();
+    }
+  }
+
+  public static boolean checkDiskSpace(long requiredSpace, Path dirPath) {
+    File file = dirPath.toFile();
+    long usableSpace = file.getUsableSpace();
+    long additionalSpace = Math.round((ADDITIONAL_SPACE_REQUIRED / 100.0) * requiredSpace);
+    long totalRequiredSpace = requiredSpace + additionalSpace;
+
+    System.out.println("\nAvailable Disk Space: " + usableSpace / (1024 * 1024) + " MB");
+    System.out.println("Required Disk Space: " + totalRequiredSpace / (1024 * 1024) + " MB");
+    System.out
+        .println("Add. Disk Space @ " + ADDITIONAL_SPACE_REQUIRED + "%: " + additionalSpace / (1024 * 1024) + " MB");
+
+    if (usableSpace < totalRequiredSpace) {
+      System.out.println("\nInsufficient disk space. Cannot proceed with the operation.");
+      return false;
+    } else {
+      return true;
     }
   }
 }

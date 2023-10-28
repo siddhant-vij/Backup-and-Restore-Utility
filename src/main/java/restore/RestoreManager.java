@@ -42,6 +42,11 @@ public class RestoreManager {
     ZipFile zipFile = new ZipFile(backupZipPath.toFile());
     initializeRestore();
     readZipEntries(zipFile);
+    boolean isEnoughSpace = FileOperationsUtil.checkDiskSpace(estimatedTotalBytes.get(),
+        Path.of(config.getDefaultRestoreDir()));
+    if (!isEnoughSpace) {
+      System.exit(1);
+    }
     performRestore(zipFile);
   }
 
@@ -130,11 +135,9 @@ public class RestoreManager {
   private void performRestore(ZipFile zipFile) throws IOException {
     ExecutorService restoreExecutor = Executors.newVirtualThreadPerTaskExecutor();
     long totalFiles = allEntries.size();
-    long totalBytes = estimatedTotalBytes.get();
     AtomicLong bytesRestored = new AtomicLong(0);
     AtomicBoolean shouldContinue = new AtomicBoolean(true);
-    System.out.println(
-        "\nNo. of files to restore: " + totalFiles + " with disk space: " + totalBytes / (1024 * 1024) + " MB");
+    System.out.println("\nNo. of files to restore: " + totalFiles);
     Timer timer = FileOperationsUtil.displayProgressRestore(bytesRestored, estimatedTotalBytes.get());
     for (ZipEntry entry : allEntries) {
       restoreEntry(entry, bytesRestored, shouldContinue, restoreExecutor, Path.of(config.getDefaultRestoreDir()),
