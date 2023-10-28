@@ -11,5 +11,7 @@
   "restoreExcludePatterns": ["none"],
   "enableIntegrityCheck":true,
   "hashAlgorithm":"SHA256",
-  "hashFileDir":"./resources"
+  "hashFileDir":"./resources",
+  "enableLogging":false,
+  "logFileLocation":"./logs/audit.log"
 }

@@ -27,6 +27,8 @@ public class Configuration {
   private boolean enableIntegrityCheck;
   private String hashAlgorithm;
   private String hashFileDir;
+  private boolean enableLogging;
+  private String logFileLocation;
 
   private void readJsonConfig(String configFilePath) {
     JSONParser parser = new JSONParser();
@@ -114,6 +116,12 @@ public class Configuration {
       if (configJson.get("hashFileDir") != null) {
         hashFileDir = (String) configJson.get("hashFileDir");
       }
+      if (configJson.get("enableLogging") != null) {
+        enableLogging = (Boolean) configJson.get("enableLogging");
+      }
+      if (configJson.get("logFileLocation") != null) {
+        logFileLocation = (String) configJson.get("logFileLocation");
+      }
     } catch (IOException | ParseException | URISyntaxException e) {
       System.out.println("Error reading configuration: " + e.getMessage());
       throw new RuntimeException(e);
@@ -194,6 +202,14 @@ public class Configuration {
 
   public String getHashFileDir() {
     return hashFileDir;
+  }
+
+  public boolean isEnableLogging() {
+    return enableLogging;
+  }
+
+  public String getLogFileLocation() {
+    return logFileLocation;
   }
 
   public void print() {

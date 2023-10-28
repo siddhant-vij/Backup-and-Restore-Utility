@@ -41,7 +41,7 @@ public class RestoreManager {
     Path backupZipPath = Path.of(config.getDefaultBackupDir(), "backup.zip");
     ZipFile zipFile = new ZipFile(backupZipPath.toFile());
     initializeRestore();
-    readZipEntries(backupZipPath, zipFile);
+    readZipEntries(zipFile);
     performRestore(zipFile);
   }
 
@@ -76,7 +76,7 @@ public class RestoreManager {
     }
   }
 
-  private void readZipEntries(Path backupZipPath, ZipFile zipFile) throws IOException {
+  private void readZipEntries(ZipFile zipFile) throws IOException {
     ExecutorService readEntriesExecutor = Executors.newVirtualThreadPerTaskExecutor();
     zipFile.stream().forEach(entry -> readEntriesExecutor.submit(() -> readSingleZipEntry(zipFile, entry)));
     readEntriesExecutor.shutdown();
@@ -149,6 +149,7 @@ public class RestoreManager {
       restoreExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
       if (!shouldContinue.get()) {
         System.out.println("\nRestore operation terminated due to failed integrity check.\n");
+        timer.cancel();
         return;
       }
       System.out.println("\nRestore complete!");
