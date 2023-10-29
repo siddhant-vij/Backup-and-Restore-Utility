@@ -1,6 +1,6 @@
 # Backup and Restore Utility
 
-A simple terminal-based Backup & Restore Utility in Java. This tool allows the users to create and restore backups of files easily. Not production-ready: GC(JVM) issues for large backup/restore operations.
+A simple terminal-based Backup & Restore Utility in Java. This tool allows the users to create and restore backups of files easily. Not production-ready: GC (JVM) issues for large backup/restore operations.
 
 ## Table of Contents
 
@@ -56,10 +56,8 @@ Contributions are what make the open-source community such an amazing place to l
 - **API Integration**: Allow integration with other systems - used as a service by other apps.
 - **Backup to Remote Server**: Ability to backup to a remote server via FTP or SSH.
 - **Scheduled Backups**: Ability to schedule backups at recurring intervals.
-- **Hot Backup/Quick Restore**: Ability to backup & restore with minimum downtime - time efficient.
 - **Bandwidth Throttling**: Limit the amount of network bandwidth used during backup to a remote server.
 - **Notification & Alerts**: Send status reports, success/failure notifications, and alerts.
-- **Backup Templates**: Save and load backup configurations as templates.
 - **User Access Control**: Restrict who can perform backup/restore to prevent unauthorized data access.
 - **Multi-Platform Support**: Ability to backup data from various operating systems, databases & apps.
 - **Cross-Platform Restore**: Ability to restore data to different hardware or operating systems.
